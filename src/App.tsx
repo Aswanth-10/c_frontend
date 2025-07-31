@@ -10,7 +10,7 @@ import CreateForm from './pages/CreateForm';
 import FormAnalytics from './pages/FormAnalytics';
 import ResponsesList from './pages/ResponsesList';
 import PublicFeedbackForm from './pages/PublicFeedbackForm';
-import UserHome from './pages/UserHome';
+import UserAccess from './pages/UserAccess';
 import Login from './pages/Login';
 
 function App() {
@@ -21,7 +21,7 @@ function App() {
           <div className="App">
             <Routes>
               {/* Public routes */}
-              <Route path="/" element={<UserHome />} />
+              <Route path="/" element={<UserAccess />} />
               <Route path="/login" element={<Login />} />
               <Route path="/feedback/:formId" element={<PublicFeedbackForm />} />
               

@@ -21,10 +21,12 @@ import {
   ArrowTrendingUpIcon,
   CalendarIcon,
   EyeIcon,
-  ArrowLeftIcon
+  ArrowLeftIcon,
+  ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 import { formsAPI } from '../services/api';
 import { FormAnalytics as FormAnalyticsType, QuestionAnalytics, FeedbackForm } from '../types';
+import { useAuth } from '../contexts/AuthContext';
 
 // Register Chart.js components
 ChartJS.register(
@@ -42,19 +44,35 @@ ChartJS.register(
 const FormAnalytics: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { isAuthenticated, user } = useAuth();
   
   const [analytics, setAnalytics] = useState<FormAnalyticsType | null>(null);
   const [questionAnalytics, setQuestionAnalytics] = useState<QuestionAnalytics[]>([]);
   const [form, setForm] = useState<FeedbackForm | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [errorType, setErrorType] = useState<'auth' | 'notfound' | 'network' | 'general'>('general');
 
   useEffect(() => {
+    // Check authentication first
+    if (!isAuthenticated) {
+      setError('You must be logged in to view analytics');
+      setErrorType('auth');
+      setLoading(false);
+      return;
+    }
+
     const loadAnalytics = async () => {
-      if (!id) return;
+      if (!id) {
+        setError('Form ID is required');
+        setErrorType('notfound');
+        setLoading(false);
+        return;
+      }
       
       try {
         setLoading(true);
+        setError('');
         
         // Load all analytics data in parallel
         const [analyticsData, questionData, formData] = await Promise.all([
@@ -68,14 +86,31 @@ const FormAnalytics: React.FC = () => {
         setForm(formData);
       } catch (error: any) {
         console.error('Failed to load analytics:', error);
-        setError('Failed to load analytics data');
+        
+        // More specific error handling
+        if (error.response?.status === 401) {
+          setError('You are not authorized to view this form\'s analytics. Please log in again.');
+          setErrorType('auth');
+        } else if (error.response?.status === 404) {
+          setError('The requested form was not found or you don\'t have permission to view it.');
+          setErrorType('notfound');
+        } else if (error.response?.status >= 500) {
+          setError('Server error occurred while loading analytics. Please try again later.');
+          setErrorType('network');
+        } else if (error.code === 'NETWORK_ERROR' || !error.response) {
+          setError('Network connection error. Please check your internet connection and try again.');
+          setErrorType('network');
+        } else {
+          setError(error.response?.data?.error || 'Failed to load analytics data. Please try again.');
+          setErrorType('general');
+        }
       } finally {
         setLoading(false);
       }
     };
 
     loadAnalytics();
-  }, [id]);
+  }, [id, isAuthenticated]);
 
   // Generate colors for charts
   const generateColors = (count: number) => {
@@ -154,10 +189,23 @@ const FormAnalytics: React.FC = () => {
     };
   };
 
+  // Retry function
+  const handleRetry = () => {
+    window.location.reload();
+  };
+
+  // Handle authentication redirect
+  const handleLoginRedirect = () => {
+    navigate('/login');
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-96">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading analytics data...</p>
+        </div>
       </div>
     );
   }
@@ -165,13 +213,40 @@ const FormAnalytics: React.FC = () => {
   if (error) {
     return (
       <div className="text-center py-12">
-        <p className="text-red-600 mb-4">{error}</p>
-        <button
-          onClick={() => navigate('/admin/forms')}
-          className="text-blue-600 hover:text-blue-800"
-        >
-          ← Back to Forms
-        </button>
+        <div className="max-w-md mx-auto">
+          <ExclamationTriangleIcon className="h-16 w-16 text-red-500 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+            {errorType === 'auth' ? 'Authentication Required' :
+             errorType === 'notfound' ? 'Form Not Found' :
+             errorType === 'network' ? 'Connection Error' : 'Error Loading Analytics'}
+          </h2>
+          <p className="text-red-600 mb-6">{error}</p>
+          
+          <div className="space-y-3">
+            {errorType === 'auth' ? (
+              <button
+                onClick={handleLoginRedirect}
+                className="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition"
+              >
+                Go to Login
+              </button>
+            ) : (
+              <button
+                onClick={handleRetry}
+                className="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition"
+              >
+                Try Again
+              </button>
+            )}
+            
+            <button
+              onClick={() => navigate('/admin/forms')}
+              className="w-full text-blue-600 hover:text-blue-800 border border-blue-600 px-4 py-2 rounded-md transition"
+            >
+              ← Back to Forms
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -179,7 +254,7 @@ const FormAnalytics: React.FC = () => {
   if (!analytics || !form) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-600 mb-4">No analytics data available</p>
+        <p className="text-gray-600 mb-4">No analytics data available for this form</p>
         <button
           onClick={() => navigate('/admin/forms')}
           className="text-blue-600 hover:text-blue-800"

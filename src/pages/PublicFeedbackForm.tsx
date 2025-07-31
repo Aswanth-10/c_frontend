@@ -281,10 +281,13 @@ const PublicFeedbackForm: React.FC = () => {
             href="/" 
             className="inline-block bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition duration-200"
           >
-            Submit Another Form
+            Return to Portal
           </a>
           <p className="text-sm text-gray-500">
-            Return to the user portal to access other feedback forms
+            Browse more feedback forms or submit additional responses
+          </p>
+          <p className="text-xs text-gray-400 mt-2">
+            Form ID: {formId}
           </p>
         </div>
       </div>
@@ -339,4 +342,4 @@ const PublicFeedbackForm: React.FC = () => {
   );
 };
 
-export default PublicFeedbackForm; 
+export default PublicFeedbackForm;
