@@ -9,6 +9,7 @@ import {
   DocumentTextIcon,
   ChatBubbleLeftRightIcon,
   QuestionMarkCircleIcon,
+  ShareIcon,
 } from '@heroicons/react/24/outline';
 import { formsAPI } from '../services/api';
 import { FeedbackForm } from '../types';
@@ -188,6 +189,17 @@ const FormsList: React.FC = () => {
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => {
+                          const link = `${window.location.origin}/feedback/${form.id}`;
+                          navigator.clipboard.writeText(link);
+                          alert(`✅ Form link copied!\n\n📋 ${link}\n\n👥 Share this link with users to collect feedback.`);
+                        }}
+                        className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200"
+                      >
+                        <ShareIcon className="h-3 w-3 mr-1" />
+                        Get Link
+                      </button>
                       <Link
                         to={`/admin/forms/${form.id}/analytics`}
                         className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-primary-700 bg-primary-100 hover:bg-primary-200"
@@ -221,4 +233,4 @@ const FormsList: React.FC = () => {
   );
 };
 
-export default FormsList; 
+export default FormsList;

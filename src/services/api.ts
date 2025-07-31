@@ -21,6 +21,16 @@ const api = axios.create({
   withCredentials: true,
 });
 
+// Create a separate public API instance without auth requirements
+const publicApi = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  withCredentials: false, // Don't send credentials for public requests
+});
+
+
 // Request interceptor to add auth token
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('authToken');
@@ -35,9 +45,13 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Handle unauthorized access
-      localStorage.removeItem('authToken');
-      window.location.href = '/login';
+      // Only redirect to admin login for protected routes
+      const currentPath = window.location.pathname;
+      if (currentPath.startsWith('/admin')) {
+        localStorage.removeItem('authToken');
+        window.location.href = '/admin/login';
+      }
+      // For public routes, just continue without redirect
     }
     return Promise.reject(error);
   }
@@ -115,17 +129,16 @@ export const formsAPI = {
 export const publicFeedbackAPI = {
   // Get form for public access
   getPublicForm: async (formId: string): Promise<FeedbackForm> => {
-    const response = await api.get(`/api/public/feedback/${formId}/`);
+    const response = await publicApi.get(`/api/public/feedback/${formId}/`);
     return response.data;
   },
   
   // Submit feedback response
   submitFeedback: async (formId: string, data: SubmitFeedbackData): Promise<{ message: string; response_id: string }> => {
-    const response = await api.post(`/api/public/feedback/${formId}/`, data);
+    const response = await publicApi.post(`/api/public/feedback/${formId}/`, data);
     return response.data;
   },
 };
-
 // Responses API
 export const responsesAPI = {
   // Get all responses for the current user's forms

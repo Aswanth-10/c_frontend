@@ -1,22 +1,423 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement,
+  PointElement,
+  LineElement,
+} from 'chart.js';
+import { Bar, Doughnut, Line } from 'react-chartjs-2';
+import { 
+  ChartBarIcon, 
+  ClockIcon, 
+  StarIcon, 
+  UsersIcon,
+  ArrowTrendingUpIcon,
+  CalendarIcon,
+  EyeIcon,
+  ArrowLeftIcon
+} from '@heroicons/react/24/outline';
+import { formsAPI } from '../services/api';
+import { FormAnalytics as FormAnalyticsType, QuestionAnalytics, FeedbackForm } from '../types';
+
+// Register Chart.js components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement,
+  PointElement,
+  LineElement
+);
 
 const FormAnalytics: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  
+  const [analytics, setAnalytics] = useState<FormAnalyticsType | null>(null);
+  const [questionAnalytics, setQuestionAnalytics] = useState<QuestionAnalytics[]>([]);
+  const [form, setForm] = useState<FeedbackForm | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const loadAnalytics = async () => {
+      if (!id) return;
+      
+      try {
+        setLoading(true);
+        
+        // Load all analytics data in parallel
+        const [analyticsData, questionData, formData] = await Promise.all([
+          formsAPI.getFormAnalytics(id),
+          formsAPI.getQuestionAnalytics(id),
+          formsAPI.getForm(id)
+        ]);
+        
+        setAnalytics(analyticsData);
+        setQuestionAnalytics(questionData);
+        setForm(formData);
+      } catch (error: any) {
+        console.error('Failed to load analytics:', error);
+        setError('Failed to load analytics data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadAnalytics();
+  }, [id]);
+
+  // Generate colors for charts
+  const generateColors = (count: number) => {
+    const colors = [
+      '#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6',
+      '#06B6D4', '#F97316', '#84CC16', '#EC4899', '#6366F1'
+    ];
+    return Array.from({ length: count }, (_, i) => colors[i % colors.length]);
+  };
+
+  // Prepare chart data for question analytics
+  const getQuestionChartData = (question: QuestionAnalytics) => {
+    const labels = Object.keys(question.answer_distribution);
+    const data = Object.values(question.answer_distribution);
+    const colors = generateColors(labels.length);
+
+    return {
+      labels,
+      datasets: [
+        {
+          data,
+          backgroundColor: colors,
+          borderColor: colors,
+          borderWidth: 1,
+        },
+      ],
+    };
+  };
+
+  // Chart options
+  const chartOptions = {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: 'bottom' as const,
+      },
+    },
+  };
+
+  const barChartOptions = {
+    responsive: true,
+    plugins: {
+      legend: {
+        display: false,
+      },
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+      },
+    },
+  };
+
+  // Prepare response timeline data (mock data for demonstration)
+  const getResponseTimelineData = () => {
+    const last7Days = Array.from({ length: 7 }, (_, i) => {
+      const date = new Date();
+      date.setDate(date.getDate() - 6 + i);
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    });
+
+    // Mock response data - in real implementation, this would come from the backend
+    const responseCounts = [2, 5, 3, 8, 6, 4, 7];
+
+    return {
+      labels: last7Days,
+      datasets: [
+        {
+          label: 'Responses',
+          data: responseCounts,
+          borderColor: '#3B82F6',
+          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          tension: 0.4,
+        },
+      ],
+    };
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-red-600 mb-4">{error}</p>
+        <button
+          onClick={() => navigate('/admin/forms')}
+          className="text-blue-600 hover:text-blue-800"
+        >
+          ← Back to Forms
+        </button>
+      </div>
+    );
+  }
+
+  if (!analytics || !form) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-gray-600 mb-4">No analytics data available</p>
+        <button
+          onClick={() => navigate('/admin/forms')}
+          className="text-blue-600 hover:text-blue-800"
+        >
+          ← Back to Forms
+        </button>
+      </div>
+    );
+  }
+
+  const stats = [
+    {
+      name: 'Total Responses',
+      value: analytics.total_responses,
+      icon: UsersIcon,
+      color: 'bg-blue-500',
+    },
+    {
+      name: 'Completion Rate',
+      value: `${analytics.completion_rate.toFixed(1)}%`,
+      icon: ArrowTrendingUpIcon,
+      color: 'bg-green-500',
+    },
+    {
+      name: 'Average Rating',
+      value: analytics.average_rating ? analytics.average_rating.toFixed(1) : 'N/A',
+      icon: StarIcon,
+      color: 'bg-yellow-500',
+    },
+    {
+      name: 'Last Updated',
+      value: new Date(analytics.last_updated).toLocaleDateString(),
+      icon: ClockIcon,
+      color: 'bg-purple-500',
+    },
+  ];
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Form Analytics</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          View detailed analytics for your feedback form
-        </p>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <button
+            onClick={() => navigate('/admin/forms')}
+            className="flex items-center text-blue-600 hover:text-blue-800 mb-2"
+          >
+            <ArrowLeftIcon className="h-4 w-4 mr-1" />
+            Back to Forms
+          </button>
+          <h1 className="text-2xl font-bold text-gray-900">Form Analytics</h1>
+          <p className="mt-1 text-sm text-gray-500">
+            Detailed insights for "{form.title}"
+          </p>
+        </div>
+        <div className="flex items-center space-x-3">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+            <CalendarIcon className="h-3 w-3 mr-1" />
+            Created {new Date(form.created_at).toLocaleDateString()}
+          </span>
+          <button
+            onClick={() => window.open(`/feedback/${form.id}`, '_blank')}
+            className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+          >
+            <EyeIcon className="h-4 w-4 mr-2" />
+            Preview Form
+          </button>
+        </div>
       </div>
-      
+
+      {/* Stats Overview */}
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        {stats.map((stat) => (
+          <div key={stat.name} className="bg-white overflow-hidden shadow rounded-lg">
+            <div className="p-5">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <div className={`${stat.color} rounded-md p-3`}>
+                    <stat.icon className="h-6 w-6 text-white" />
+                  </div>
+                </div>
+                <div className="ml-5 w-0 flex-1">
+                  <dl>
+                    <dt className="text-sm font-medium text-gray-500 truncate">
+                      {stat.name}
+                    </dt>
+                    <dd className="text-lg font-medium text-gray-900">
+                      {stat.value}
+                    </dd>
+                  </dl>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Response Timeline */}
       <div className="bg-white shadow rounded-lg p-6">
-        <p className="text-gray-600 text-center">
-          Form analytics page will be implemented here with charts and detailed insights.
-        </p>
+        <h3 className="text-lg font-medium text-gray-900 mb-4">Response Timeline (Last 7 Days)</h3>
+        <div className="h-64">
+          <Line data={getResponseTimelineData()} options={chartOptions} />
+        </div>
+      </div>
+
+      {/* Question Analytics */}
+      <div className="space-y-6">
+        <h3 className="text-lg font-medium text-gray-900">Question Analytics</h3>
+        
+        {questionAnalytics.length === 0 ? (
+          <div className="bg-white shadow rounded-lg p-6 text-center">
+            <ChartBarIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-600">No question analytics available yet.</p>
+            <p className="text-sm text-gray-500 mt-2">Analytics will appear once responses are submitted.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {questionAnalytics.map((question, index) => (
+              <div key={question.question_id} className="bg-white shadow rounded-lg p-6">
+                <div className="mb-4">
+                  <h4 className="text-sm font-medium text-gray-900 mb-2">
+                    Question {index + 1}: {question.question_text}
+                  </h4>
+                  <div className="flex items-center space-x-4 text-sm text-gray-500">
+                    <span>Type: {question.question_type}</span>
+                    <span>Responses: {question.response_count}</span>
+                    {question.average_rating && (
+                      <span>Avg Rating: {question.average_rating.toFixed(1)}</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Rating Questions */}
+                {(question.question_type === 'rating' || question.question_type === 'rating_10') && question.average_rating && (
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-gray-700">Average Rating</span>
+                      <span className="text-2xl font-bold text-blue-600">
+                        {question.average_rating.toFixed(1)}
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-blue-600 h-2 rounded-full"
+                        style={{
+                          width: `${(question.average_rating / (question.question_type === 'rating_10' ? 10 : 5)) * 100}%`
+                        }}
+                      ></div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Distribution Charts */}
+                {Object.keys(question.answer_distribution).length > 0 && (
+                  <div className="h-64">
+                    {question.question_type === 'radio' || question.question_type === 'yes_no' ? (
+                      <Doughnut data={getQuestionChartData(question)} options={chartOptions} />
+                    ) : (
+                      <Bar data={getQuestionChartData(question)} options={barChartOptions} />
+                    )}
+                  </div>
+                )}
+
+                {/* Text Responses Summary */}
+                {(question.question_type === 'text' || question.question_type === 'textarea') && (
+                  <div className="text-center text-gray-500">
+                    <p>Text responses: {question.response_count}</p>
+                    <p className="text-sm mt-1">View individual responses in the Responses tab</p>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Form Details */}
+      <div className="bg-white shadow rounded-lg p-6">
+        <h3 className="text-lg font-medium text-gray-900 mb-4">Form Details</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <h4 className="text-sm font-medium text-gray-700 mb-2">Basic Information</h4>
+            <dl className="space-y-2">
+              <div>
+                <dt className="text-sm text-gray-500">Title</dt>
+                <dd className="text-sm font-medium text-gray-900">{form.title}</dd>
+              </div>
+              <div>
+                <dt className="text-sm text-gray-500">Type</dt>
+                <dd className="text-sm font-medium text-gray-900 capitalize">
+                  {form.form_type.replace('_', ' ')}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-sm text-gray-500">Status</dt>
+                <dd>
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    form.is_active && !form.is_expired
+                      ? 'bg-green-100 text-green-800'
+                      : 'bg-red-100 text-red-800'
+                  }`}>
+                    {form.is_active && !form.is_expired ? 'Active' : 'Inactive'}
+                  </span>
+                </dd>
+              </div>
+            </dl>
+          </div>
+          <div>
+            <h4 className="text-sm font-medium text-gray-700 mb-2">Statistics</h4>
+            <dl className="space-y-2">
+              <div>
+                <dt className="text-sm text-gray-500">Total Questions</dt>
+                <dd className="text-sm font-medium text-gray-900">{form.questions.length}</dd>
+              </div>
+              <div>
+                <dt className="text-sm text-gray-500">Required Questions</dt>
+                <dd className="text-sm font-medium text-gray-900">
+                  {form.questions.filter(q => q.is_required).length}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-sm text-gray-500">Shareable Link</dt>
+                <dd className="text-sm font-mono text-blue-600 break-all">
+                  {window.location.origin}/feedback/{form.id}
+                </dd>
+              </div>
+            </dl>
+          </div>
+        </div>
+        
+        {form.description && (
+          <div className="mt-6">
+            <h4 className="text-sm font-medium text-gray-700 mb-2">Description</h4>
+            <p className="text-sm text-gray-600">{form.description}</p>
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
-export default FormAnalytics; 
+export default FormAnalytics;
