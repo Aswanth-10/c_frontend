@@ -10,7 +10,7 @@ import CreateForm from './pages/CreateForm';
 import FormAnalytics from './pages/FormAnalytics';
 import ResponsesList from './pages/ResponsesList';
 import PublicFeedbackForm from './pages/PublicFeedbackForm';
-import UserAccess from './pages/UserAccess';
+import UserHome from './pages/UserHome';
 import Login from './pages/Login';
 
 function App() {
@@ -20,13 +20,10 @@ function App() {
         <Router>
           <div className="App">
             <Routes>
-              {/* Public routes for users */}
-              <Route path="/" element={<UserAccess />} />
-              <Route path="/user" element={<UserAccess />} />
+              {/* Public routes */}
+              <Route path="/" element={<UserHome />} />
+              <Route path="/login" element={<Login />} />
               <Route path="/feedback/:formId" element={<PublicFeedbackForm />} />
-              
-              {/* Admin authentication */}
-              <Route path="/admin/login" element={<Login />} />
               
               {/* Protected admin routes */}
               <Route path="/admin" element={
@@ -42,8 +39,7 @@ function App() {
                 <Route path="responses" element={<ResponsesList />} />
               </Route>
               
-              {/* Legacy redirect */}
-              <Route path="/login" element={<Navigate to="/admin/login" replace />} />
+              {/* Default redirect for unknown routes */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </div>
