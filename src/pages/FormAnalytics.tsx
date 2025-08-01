@@ -11,6 +11,7 @@ import {
   ArcElement,
   PointElement,
   LineElement,
+  Filler,
 } from 'chart.js';
 import { Bar, Doughnut, Line } from 'react-chartjs-2';
 import { 
@@ -22,7 +23,8 @@ import {
   CalendarIcon,
   EyeIcon,
   ArrowLeftIcon,
-  ExclamationTriangleIcon
+  ExclamationTriangleIcon,
+  ArrowPathIcon
 } from '@heroicons/react/24/outline';
 import { formsAPI } from '../services/api';
 import { FormAnalytics as FormAnalyticsType, QuestionAnalytics, FeedbackForm } from '../types';
@@ -38,7 +40,8 @@ ChartJS.register(
   Legend,
   ArcElement,
   PointElement,
-  LineElement
+  LineElement,
+  Filler
 );
 
 const FormAnalytics: React.FC = () => {
@@ -52,6 +55,7 @@ const FormAnalytics: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [errorType, setErrorType] = useState<'auth' | 'notfound' | 'network' | 'general'>('general');
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     // Check authentication first
@@ -74,16 +78,19 @@ const FormAnalytics: React.FC = () => {
         setLoading(true);
         setError('');
         
-        // Load all analytics data in parallel
-        const [analyticsData, questionData, formData] = await Promise.all([
+        // Load form data first to validate access
+        const formData = await formsAPI.getForm(id);
+        setForm(formData);
+        
+        // Then load analytics data
+        const [analyticsData, questionData] = await Promise.all([
           formsAPI.getFormAnalytics(id),
-          formsAPI.getQuestionAnalytics(id),
-          formsAPI.getForm(id)
+          formsAPI.getQuestionAnalytics(id)
         ]);
         
         setAnalytics(analyticsData);
         setQuestionAnalytics(questionData);
-        setForm(formData);
+        setRetryCount(0); // Reset retry count on success
       } catch (error: any) {
         console.error('Failed to load analytics:', error);
         
@@ -110,7 +117,7 @@ const FormAnalytics: React.FC = () => {
     };
 
     loadAnalytics();
-  }, [id, isAuthenticated]);
+  }, [id, isAuthenticated, retryCount]);
 
   // Generate colors for charts
   const generateColors = (count: number) => {
@@ -133,35 +140,146 @@ const FormAnalytics: React.FC = () => {
         {
           data,
           backgroundColor: colors,
-          borderColor: colors,
-          borderWidth: 1,
+          borderColor: colors.map(color => color + '80'),
+          borderWidth: 2,
+          hoverBorderWidth: 3,
         },
       ],
     };
   };
 
-  // Chart options
+  // Enhanced chart options
   const chartOptions = {
     responsive: true,
+    maintainAspectRatio: false,
     plugins: {
       legend: {
         position: 'bottom' as const,
+        labels: {
+          padding: 20,
+          usePointStyle: true,
+          font: {
+            size: 12,
+            weight: 500
+          }
+        },
+      },
+      tooltip: {
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        titleColor: '#fff',
+        bodyColor: '#fff',
+        borderColor: '#3B82F6',
+        borderWidth: 1,
+        cornerRadius: 8,
+        displayColors: true,
+        callbacks: {
+          label: function(context: any) {
+            const total = context.dataset.data.reduce((a: number, b: number) => a + b, 0);
+            const percentage = ((context.parsed / total) * 100).toFixed(1);
+            return `${context.label}: ${context.parsed} (${percentage}%)`;
+          }
+        }
       },
     },
   };
 
   const barChartOptions = {
     responsive: true,
+    maintainAspectRatio: false,
     plugins: {
       legend: {
         display: false,
+      },
+      tooltip: {
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        titleColor: '#fff',
+        bodyColor: '#fff',
+        borderColor: '#3B82F6',
+        borderWidth: 1,
+        cornerRadius: 8,
       },
     },
     scales: {
       y: {
         beginAtZero: true,
+        grid: {
+          color: 'rgba(0, 0, 0, 0.1)',
+        },
+        ticks: {
+          font: {
+            size: 12,
+            weight: 500
+          }
+        }
+      },
+      x: {
+        grid: {
+          display: false,
+        },
+        ticks: {
+          font: {
+            size: 12,
+            weight: 500
+          }
+        }
+      }
+    },
+  };
+
+  const lineChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false,
+      },
+      tooltip: {
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        titleColor: '#fff',
+        bodyColor: '#fff',
+        borderColor: '#3B82F6',
+        borderWidth: 1,
+        cornerRadius: 8,
       },
     },
+    scales: {
+      y: {
+        beginAtZero: true,
+        grid: {
+          color: 'rgba(0, 0, 0, 0.1)',
+        },
+        ticks: {
+          font: {
+            size: 12,
+            weight: 500
+          }
+        }
+      },
+      x: {
+        grid: {
+          display: false,
+        },
+        ticks: {
+          font: {
+            size: 12,
+            weight: 500
+          }
+        }
+      }
+    },
+    elements: {
+      point: {
+        radius: 6,
+        hoverRadius: 8,
+        backgroundColor: '#3B82F6',
+        borderColor: '#fff',
+        borderWidth: 2,
+      },
+      line: {
+        tension: 0.4,
+        borderWidth: 3,
+      }
+    }
   };
 
   // Prepare response timeline data (mock data for demonstration)
@@ -183,6 +301,7 @@ const FormAnalytics: React.FC = () => {
           data: responseCounts,
           borderColor: '#3B82F6',
           backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          fill: true,
           tension: 0.4,
         },
       ],
@@ -191,7 +310,7 @@ const FormAnalytics: React.FC = () => {
 
   // Retry function
   const handleRetry = () => {
-    window.location.reload();
+    setRetryCount(prev => prev + 1);
   };
 
   // Handle authentication redirect
@@ -233,8 +352,9 @@ const FormAnalytics: React.FC = () => {
             ) : (
               <button
                 onClick={handleRetry}
-                className="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition"
+                className="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition flex items-center justify-center"
               >
+                <ArrowPathIcon className="h-4 w-4 mr-2" />
                 Try Again
               </button>
             )}
@@ -355,7 +475,7 @@ const FormAnalytics: React.FC = () => {
       <div className="bg-white shadow rounded-lg p-6">
         <h3 className="text-lg font-medium text-gray-900 mb-4">Response Timeline (Last 7 Days)</h3>
         <div className="h-64">
-          <Line data={getResponseTimelineData()} options={chartOptions} />
+          <Line data={getResponseTimelineData()} options={lineChartOptions} />
         </div>
       </div>
 
@@ -395,9 +515,9 @@ const FormAnalytics: React.FC = () => {
                         {question.average_rating.toFixed(1)}
                       </span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="w-full bg-gray-200 rounded-full h-3">
                       <div
-                        className="bg-blue-600 h-2 rounded-full"
+                        className="bg-blue-600 h-3 rounded-full transition-all duration-300"
                         style={{
                           width: `${(question.average_rating / (question.question_type === 'rating_10' ? 10 : 5)) * 100}%`
                         }}

@@ -10,7 +10,6 @@ import CreateForm from './pages/CreateForm';
 import FormAnalytics from './pages/FormAnalytics';
 import ResponsesList from './pages/ResponsesList';
 import PublicFeedbackForm from './pages/PublicFeedbackForm';
-import UserAccess from './pages/UserAccess';
 import Login from './pages/Login';
 
 function App() {
@@ -21,7 +20,7 @@ function App() {
           <div className="App">
             <Routes>
               {/* Public routes */}
-              <Route path="/" element={<UserAccess />} />
+              <Route path="/" element={<Navigate to="/login" replace />} />
               <Route path="/login" element={<Login />} />
               <Route path="/feedback/:formId" element={<PublicFeedbackForm />} />
               
@@ -40,7 +39,7 @@ function App() {
               </Route>
               
               {/* Default redirect for unknown routes */}
-              <Route path="*" element={<Navigate to="/" replace />} />
+              <Route path="*" element={<Navigate to="/login" replace />} />
             </Routes>
           </div>
         </Router>

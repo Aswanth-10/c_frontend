@@ -6,43 +6,64 @@ import {
   ChatBubbleLeftRightIcon,
   DocumentTextIcon,
   MagnifyingGlassIcon,
+  FunnelIcon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline';
-import { responsesAPI } from '../services/api';
-import { FeedbackResponse } from '../types';
+import { responsesAPI, formsAPI } from '../services/api';
+import { FeedbackResponse, FeedbackForm } from '../types';
 
 const ResponsesList: React.FC = () => {
   const [responses, setResponses] = useState<FeedbackResponse[]>([]);
+  const [forms, setForms] = useState<FeedbackForm[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterForm, setFilterForm] = useState('');
+  const [filterFormType, setFilterFormType] = useState('');
 
   useEffect(() => {
-    loadResponses();
+    loadData();
   }, []);
 
-  const loadResponses = async () => {
+  const loadData = async () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await responsesAPI.getResponses();
-      setResponses(data);
+      const [responsesData, formsData] = await Promise.all([
+        responsesAPI.getResponses(),
+        formsAPI.getForms()
+      ]);
+      setResponses(responsesData);
+      setForms(formsData);
     } catch (err) {
-      console.error('Failed to load responses:', err);
+      console.error('Failed to load data:', err);
       setError('Failed to load responses');
     } finally {
       setLoading(false);
     }
   };
 
+  // Get form details for each response
+  const getFormDetails = (formId: string) => {
+    return forms.find(form => form.id === formId);
+  };
+
+  // Filter responses based on search and filters
   const filteredResponses = responses.filter(response => {
+    const formDetails = getFormDetails(response.form);
     const matchesSearch = response.form_title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          response.id.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesForm = !filterForm || response.form === filterForm;
-    return matchesSearch && matchesForm;
+    const matchesFormType = !filterFormType || formDetails?.form_type === filterFormType;
+    
+    return matchesSearch && matchesForm && matchesFormType;
   });
 
+  // Get unique forms for filter dropdown
   const uniqueForms = Array.from(new Set(responses.map(r => r.form)));
+
+  // Get unique form types for filter dropdown
+  const uniqueFormTypes = Array.from(new Set(forms.map(form => form.form_type)));
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -53,6 +74,32 @@ const ResponsesList: React.FC = () => {
       minute: '2-digit',
     });
   };
+
+  const getFormTypeBadge = (formType: string) => {
+    const typeColors = {
+      customer_satisfaction: 'bg-blue-100 text-blue-800',
+      employee_feedback: 'bg-green-100 text-green-800',
+      product_feedback: 'bg-purple-100 text-purple-800',
+      service_feedback: 'bg-orange-100 text-orange-800',
+      general: 'bg-gray-100 text-gray-800',
+    };
+    
+    return (
+      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${typeColors[formType as keyof typeof typeColors] || 'bg-gray-100 text-gray-800'}`}>
+        {formType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+      </span>
+    );
+  };
+
+  // Clear all filters
+  const clearFilters = () => {
+    setSearchTerm('');
+    setFilterForm('');
+    setFilterFormType('');
+  };
+
+  // Check if any filters are active
+  const hasActiveFilters = searchTerm || filterForm || filterFormType;
 
   if (loading) {
     return (
@@ -90,7 +137,24 @@ const ResponsesList: React.FC = () => {
 
       {/* Filters */}
       <div className="bg-white shadow rounded-lg p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-medium text-gray-900 flex items-center">
+            <FunnelIcon className="h-5 w-5 mr-2" />
+            Filters
+          </h3>
+          {hasActiveFilters && (
+            <button
+              onClick={clearFilters}
+              className="text-sm text-gray-500 hover:text-gray-700 flex items-center"
+            >
+              <XMarkIcon className="h-4 w-4 mr-1" />
+              Clear all
+            </button>
+          )}
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {/* Search */}
           <div>
             <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-2">
               Search
@@ -109,6 +173,8 @@ const ResponsesList: React.FC = () => {
               />
             </div>
           </div>
+
+          {/* Form Filter */}
           <div>
             <label htmlFor="form-filter" className="block text-sm font-medium text-gray-700 mb-2">
               Filter by Form
@@ -130,6 +196,33 @@ const ResponsesList: React.FC = () => {
               })}
             </select>
           </div>
+
+          {/* Form Type Filter */}
+          <div>
+            <label htmlFor="form-type-filter" className="block text-sm font-medium text-gray-700 mb-2">
+              Form Type
+            </label>
+            <select
+              id="form-type-filter"
+              className="block w-full px-3 py-2 border border-gray-300 rounded-md leading-5 bg-white focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+              value={filterFormType}
+              onChange={(e) => setFilterFormType(e.target.value)}
+            >
+              <option value="">All Types</option>
+              {uniqueFormTypes.map((type) => (
+                <option key={type} value={type}>
+                  {type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Results Count */}
+          <div className="flex items-end">
+            <div className="text-sm text-gray-500">
+              Showing {filteredResponses.length} of {responses.length} responses
+            </div>
+          </div>
         </div>
       </div>
 
@@ -137,58 +230,68 @@ const ResponsesList: React.FC = () => {
       {filteredResponses.length === 0 ? (
         <div className="bg-white shadow rounded-lg p-12 text-center">
           <ChatBubbleLeftRightIcon className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-2 text-sm font-medium text-gray-900">No responses</h3>
+          <h3 className="mt-2 text-sm font-medium text-gray-900">
+            {responses.length === 0 ? 'No responses' : 'No responses match your filters'}
+          </h3>
           <p className="mt-1 text-sm text-gray-500">
             {responses.length === 0 
               ? "No responses have been submitted yet." 
-              : "No responses match your current filters."}
+              : "Try adjusting your search criteria or filters."}
           </p>
         </div>
       ) : (
         <div className="bg-white shadow overflow-hidden sm:rounded-md">
           <ul className="divide-y divide-gray-200">
-            {filteredResponses.map((response) => (
-              <li key={response.id}>
-                <div className="px-4 py-4 sm:px-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0">
-                        <ChatBubbleLeftRightIcon className="h-8 w-8 text-gray-400" />
-                      </div>
-                      <div className="ml-4">
-                        <div className="flex items-center">
-                          <h3 className="text-lg font-medium text-gray-900">
-                            Response #{response.id.slice(-8)}
-                          </h3>
+            {filteredResponses.map((response) => {
+              const formDetails = getFormDetails(response.form);
+              return (
+                <li key={response.id}>
+                  <div className="px-4 py-4 sm:px-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0">
+                          <ChatBubbleLeftRightIcon className="h-8 w-8 text-gray-400" />
                         </div>
-                        <div className="mt-1 flex items-center text-sm text-gray-500">
-                          <DocumentTextIcon className="h-4 w-4 mr-1" />
-                          <p>{response.form_title}</p>
-                        </div>
-                        <div className="mt-2 flex items-center text-sm text-gray-500">
-                          <CalendarIcon className="h-4 w-4 mr-1" />
-                          <p>Submitted {formatDate(response.submitted_at)}</p>
-                        </div>
-                        {response.answers && (
-                          <div className="mt-2 text-sm text-gray-500">
-                            <p>{response.answers.length} questions answered</p>
+                        <div className="ml-4">
+                          <div className="flex items-center">
+                            <h3 className="text-lg font-medium text-gray-900">
+                              Response #{response.id.slice(-8)}
+                            </h3>
+                            {formDetails && (
+                              <div className="ml-2">
+                                {getFormTypeBadge(formDetails.form_type)}
+                              </div>
+                            )}
                           </div>
-                        )}
+                          <div className="mt-1 flex items-center text-sm text-gray-500">
+                            <DocumentTextIcon className="h-4 w-4 mr-1" />
+                            <p>{response.form_title}</p>
+                          </div>
+                          <div className="mt-2 flex items-center text-sm text-gray-500">
+                            <CalendarIcon className="h-4 w-4 mr-1" />
+                            <p>Submitted {formatDate(response.submitted_at)}</p>
+                          </div>
+                          {response.answers && (
+                            <div className="mt-2 text-sm text-gray-500">
+                              <p>{response.answers.length} questions answered</p>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Link
-                        to={`/admin/responses/${response.id}`}
-                        className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-primary-700 bg-primary-100 hover:bg-primary-200"
-                      >
-                        <EyeIcon className="h-3 w-3 mr-1" />
-                        View Details
-                      </Link>
+                      <div className="flex items-center space-x-2">
+                        <Link
+                          to={`/feedback/response/${response.id}`}
+                          className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-primary-700 bg-primary-100 hover:bg-primary-200"
+                        >
+                          <EyeIcon className="h-3 w-3 mr-1" />
+                          View Details
+                        </Link>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </li>
-            ))}
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}
@@ -205,4 +308,4 @@ const ResponsesList: React.FC = () => {
   );
 };
 
-export default ResponsesList; 
+export default ResponsesList;

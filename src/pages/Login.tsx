@@ -35,14 +35,6 @@ const Login: React.FC = () => {
           <p className="mt-2 text-center text-sm text-gray-600">
             Sign in to your administrator account
           </p>
-          <div className="mt-4 text-center">
-            <a 
-              href="/" 
-              className="text-blue-600 hover:text-blue-500 text-sm"
-            >
-              ← Back to User Portal
-            </a>
-          </div>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="rounded-md shadow-sm -space-y-px">
@@ -105,4 +97,4 @@ const Login: React.FC = () => {
   );
 };
 
-export default Login; 
+export default Login;
