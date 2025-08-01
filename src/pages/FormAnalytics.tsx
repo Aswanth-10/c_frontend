@@ -9,11 +9,8 @@ import {
   Tooltip,
   Legend,
   ArcElement,
-  PointElement,
-  LineElement,
-  Filler,
 } from 'chart.js';
-import { Bar, Doughnut, Line } from 'react-chartjs-2';
+import { Bar, Doughnut } from 'react-chartjs-2';
 import { 
   ChartBarIcon, 
   ClockIcon, 
@@ -38,10 +35,7 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend,
-  ArcElement,
-  PointElement,
-  LineElement,
-  Filler
+  ArcElement
 );
 
 const FormAnalytics: React.FC = () => {
@@ -226,87 +220,9 @@ const FormAnalytics: React.FC = () => {
     },
   };
 
-  const lineChartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: false,
-      },
-      tooltip: {
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-        titleColor: '#fff',
-        bodyColor: '#fff',
-        borderColor: '#3B82F6',
-        borderWidth: 1,
-        cornerRadius: 8,
-      },
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-        grid: {
-          color: 'rgba(0, 0, 0, 0.1)',
-        },
-        ticks: {
-          font: {
-            size: 12,
-            weight: 500
-          }
-        }
-      },
-      x: {
-        grid: {
-          display: false,
-        },
-        ticks: {
-          font: {
-            size: 12,
-            weight: 500
-          }
-        }
-      }
-    },
-    elements: {
-      point: {
-        radius: 6,
-        hoverRadius: 8,
-        backgroundColor: '#3B82F6',
-        borderColor: '#fff',
-        borderWidth: 2,
-      },
-      line: {
-        tension: 0.4,
-        borderWidth: 3,
-      }
-    }
-  };
 
-  // Prepare response timeline data (mock data for demonstration)
-  const getResponseTimelineData = () => {
-    const last7Days = Array.from({ length: 7 }, (_, i) => {
-      const date = new Date();
-      date.setDate(date.getDate() - 6 + i);
-      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    });
 
-    // Mock response data - in real implementation, this would come from the backend
-    const responseCounts = [2, 5, 3, 8, 6, 4, 7];
 
-    return {
-      labels: last7Days,
-      datasets: [
-        {
-          label: 'Responses',
-          data: responseCounts,
-          borderColor: '#3B82F6',
-          backgroundColor: 'rgba(59, 130, 246, 0.1)',
-          fill: true,
-          tension: 0.4,
-        },
-      ],
-    };
-  };
 
   // Retry function
   const handleRetry = () => {
@@ -471,11 +387,27 @@ const FormAnalytics: React.FC = () => {
         ))}
       </div>
 
-      {/* Response Timeline */}
+      {/* Response Summary */}
       <div className="bg-white shadow rounded-lg p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Response Timeline (Last 7 Days)</h3>
-        <div className="h-64">
-          <Line data={getResponseTimelineData()} options={lineChartOptions} />
+        <h3 className="text-lg font-medium text-gray-900 mb-4">Response Summary</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="text-center p-4 bg-blue-50 rounded-lg">
+            <div className="text-2xl font-bold text-blue-600">{analytics?.total_responses || 0}</div>
+            <div className="text-sm text-gray-600">Total Responses</div>
+          </div>
+          <div className="text-center p-4 bg-green-50 rounded-lg">
+            <div className="text-2xl font-bold text-green-600">{analytics?.completion_rate.toFixed(1) || 0}%</div>
+            <div className="text-sm text-gray-600">Completion Rate</div>
+          </div>
+          <div className="text-center p-4 bg-purple-50 rounded-lg">
+            <div className="text-2xl font-bold text-purple-600">{analytics?.average_rating?.toFixed(1) || 'N/A'}</div>
+            <div className="text-sm text-gray-600">Average Rating</div>
+          </div>
+        </div>
+        <div className="mt-4 text-center">
+          <p className="text-sm text-gray-500">
+            Last updated: {analytics ? new Date(analytics.last_updated).toLocaleDateString() : 'N/A'}
+          </p>
         </div>
       </div>
 

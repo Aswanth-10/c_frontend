@@ -10,6 +10,7 @@ import CreateForm from './pages/CreateForm';
 import FormAnalytics from './pages/FormAnalytics';
 import ResponsesList from './pages/ResponsesList';
 import PublicFeedbackForm from './pages/PublicFeedbackForm';
+import FeedbackResponse from './pages/FeedbackResponse';
 import Login from './pages/Login';
 
 function App() {
@@ -23,6 +24,7 @@ function App() {
               <Route path="/" element={<Navigate to="/login" replace />} />
               <Route path="/login" element={<Login />} />
               <Route path="/feedback/:formId" element={<PublicFeedbackForm />} />
+              <Route path="/feedback/response/:id" element={<FeedbackResponse />} />
               
               {/* Protected admin routes */}
               <Route path="/admin" element={

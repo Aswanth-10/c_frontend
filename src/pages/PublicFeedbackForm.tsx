@@ -301,12 +301,6 @@ const PublicFeedbackForm: React.FC = () => {
       {/* Header */}
       <div className="mb-6 text-center">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">User Feedback Portal</h1>
-        <a 
-          href="/" 
-          className="text-blue-600 hover:text-blue-500 text-sm"
-        >
-          ← Back to Portal Home
-        </a>
       </div>
       
       <form onSubmit={handleSubmit} className="bg-white shadow rounded-lg p-6">

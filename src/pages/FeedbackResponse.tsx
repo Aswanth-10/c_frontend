@@ -1,36 +1,29 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { ChatBubbleLeftRightIcon, CalendarIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
+import { publicFeedbackAPI } from '../services/api';
+import { FeedbackResponse as FeedbackResponseType } from '../types';
 
-interface Answer {
-  question_text: string;
-  answer_text: string;
-}
-
-interface ResponseData {
-  id: string;
-  form_title: string;
-  submitted_at: string;
-  answers: Answer[];
-}
+// Using the Answer and FeedbackResponse interfaces from types
 
 const FeedbackResponse: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const [response, setResponse] = useState<ResponseData | null>(null);
+  const [response, setResponse] = useState<FeedbackResponseType | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
     const fetchResponse = async () => {
+      if (!id) return;
+      
       setLoading(true);
       setError('');
       try {
-        const res = await fetch(`/api/public/response/${id}`);
-        if (!res.ok) throw new Error('Response not found');
-        const data = await res.json();
+        const data = await publicFeedbackAPI.getPublicResponse(id);
         setResponse(data);
       } catch (err: any) {
-        setError(err.message || 'Failed to load response');
+        console.error('Failed to load response:', err);
+        setError(err.response?.data?.error || 'Failed to load response');
       } finally {
         setLoading(false);
       }
@@ -56,7 +49,7 @@ const FeedbackResponse: React.FC = () => {
         </div>
         <div className="space-y-6">
           {response.answers.map((ans, idx) => (
-            <div key={idx} className="border-b pb-4">
+            <div key={ans.id || idx} className="border-b pb-4">
               <div className="flex items-center text-gray-700 mb-1">
                 <DocumentTextIcon className="h-4 w-4 mr-2" />
                 <span className="font-medium">{ans.question_text}</span>

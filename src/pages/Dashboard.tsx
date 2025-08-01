@@ -35,6 +35,7 @@ ChartJS.register(
 const Dashboard: React.FC = () => {
   const [summary, setSummary] = useState<FormSummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [timeFilter, setTimeFilter] = useState<'1hr' | '6hr' | '24hr'>('1hr');
 
   useEffect(() => {
     loadDashboardData();
@@ -50,6 +51,32 @@ const Dashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Filter responses based on time
+  const getFilteredResponses = () => {
+    if (!summary) return [];
+    
+    const now = new Date();
+    let cutoffTime: Date;
+    
+    switch (timeFilter) {
+      case '1hr':
+        cutoffTime = new Date(now.getTime() - 60 * 60 * 1000);
+        break;
+      case '6hr':
+        cutoffTime = new Date(now.getTime() - 6 * 60 * 60 * 1000);
+        break;
+      case '24hr':
+        cutoffTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        break;
+      default:
+        cutoffTime = new Date(now.getTime() - 60 * 60 * 1000);
+    }
+
+    return summary.recent_responses_list.filter(response => 
+      new Date(response.submitted_at) >= cutoffTime
+    );
   };
 
   if (loading) {
@@ -248,30 +275,72 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Timeline of Recent Feedbacks */}
+      {/* Recent Feedback with Time Filter */}
       <div className="bg-white shadow rounded-lg mt-8">
         <div className="px-4 py-5 sm:p-6">
-          <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
-            Recent Feedback Timeline
-          </h3>
-          <ul className="timeline-list">
-            {summary.recent_responses_list.map((feedback) => (
-              <li key={feedback.id} className="mb-4 flex items-start">
-                <span className="inline-block w-2 h-2 bg-primary-500 rounded-full mt-2 mr-4"></span>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg leading-6 font-medium text-gray-900">
+              Recent Feedback
+            </h3>
+            <div className="flex space-x-2">
+              <button
+                onClick={() => setTimeFilter('1hr')}
+                className={`px-3 py-1 text-xs font-medium rounded-md ${
+                  timeFilter === '1hr' 
+                    ? 'bg-primary-100 text-primary-700' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Last 1 hr
+              </button>
+              <button
+                onClick={() => setTimeFilter('6hr')}
+                className={`px-3 py-1 text-xs font-medium rounded-md ${
+                  timeFilter === '6hr' 
+                    ? 'bg-primary-100 text-primary-700' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Last 6 hrs
+              </button>
+              <button
+                onClick={() => setTimeFilter('24hr')}
+                className={`px-3 py-1 text-xs font-medium rounded-md ${
+                  timeFilter === '24hr' 
+                    ? 'bg-primary-100 text-primary-700' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Last 24 hrs
+              </button>
+            </div>
+          </div>
+          <div className="space-y-3">
+            {getFilteredResponses().map((feedback) => (
+              <div key={feedback.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                 <div>
                   <div className="flex items-center space-x-2">
-                    <span className="font-semibold text-gray-900">{feedback.form_title}</span>
-                    <span className="text-xs text-gray-500">{new Date(feedback.submitted_at).toLocaleString()}</span>
+                    <span className="font-medium text-gray-900">{feedback.form_title}</span>
+                    <span className="text-sm text-gray-500">
+                      {new Date(feedback.submitted_at).toLocaleString()}
+                    </span>
                   </div>
-                  {/* Optionally, show a snippet of the first answer if available */}
-                  {/* <div className="text-gray-700 text-sm mt-1">{feedback.commentSnippet}</div> */}
                 </div>
-              </li>
+                <div className="flex items-center space-x-2">
+                  <ClockIcon className="h-4 w-4 text-gray-400" />
+                  <span className="text-xs text-gray-500">
+                    {Math.round((Date.now() - new Date(feedback.submitted_at).getTime()) / (1000 * 60))} min ago
+                  </span>
+                </div>
+              </div>
             ))}
-            {summary.recent_responses_list.length === 0 && (
-              <li className="text-gray-500">No recent feedbacks</li>
+            {getFilteredResponses().length === 0 && (
+              <div className="text-center text-gray-500 py-8">
+                <ClockIcon className="h-8 w-8 mx-auto mb-2" />
+                <p>No feedback received in the selected time period</p>
+              </div>
             )}
-          </ul>
+          </div>
         </div>
       </div>
 

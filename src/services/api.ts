@@ -130,6 +130,12 @@ export const publicFeedbackAPI = {
     const response = await api.post(`/api/public/feedback/${formId}/`, data);
     return response.data;
   },
+  
+  // Get public response details
+  getPublicResponse: async (responseId: string): Promise<FeedbackResponse> => {
+    const response = await api.get(`/api/public/response/${responseId}/`);
+    return response.data;
+  },
 };
 
 // Responses API
