@@ -10,6 +10,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { dashboardAPI } from '../services/api';
 import { FormSummary } from '../types';
+import { useAuth } from '../contexts/AuthContext';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -37,10 +38,18 @@ const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [timeFilter, setTimeFilter] = useState<'1hr' | '6hr' | '24hr'>('1hr');
+  const { isAuthenticated, loading: authLoading } = useAuth();
 
   useEffect(() => {
-    loadDashboardData();
-  }, []);
+    // Only load dashboard data if user is authenticated and auth is not loading
+    if (!authLoading && isAuthenticated) {
+      loadDashboardData();
+    } else if (!authLoading && !isAuthenticated) {
+      // If not authenticated, set error state
+      setError('You must be logged in to view the dashboard.');
+      setLoading(false);
+    }
+  }, [authLoading, isAuthenticated]);
 
   const loadDashboardData = async () => {
     try {
@@ -82,10 +91,15 @@ const Dashboard: React.FC = () => {
     );
   };
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">
+            {authLoading ? 'Checking authentication...' : 'Loading dashboard...'}
+          </p>
+        </div>
       </div>
     );
   }
@@ -103,12 +117,23 @@ const Dashboard: React.FC = () => {
               </div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">Dashboard Error</h3>
               <p className="text-gray-600 mb-4">{error}</p>
-              <button
-                onClick={loadDashboardData}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700"
-              >
-                Try Again
-              </button>
+              <div className="space-x-3">
+                {error?.includes('logged in') ? (
+                  <button
+                    onClick={() => window.location.href = '/login'}
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700"
+                  >
+                    Go to Login
+                  </button>
+                ) : (
+                  <button
+                    onClick={loadDashboardData}
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700"
+                  >
+                    Try Again
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>

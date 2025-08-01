@@ -37,7 +37,11 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       // Handle unauthorized access
       localStorage.removeItem('authToken');
-      window.location.href = '/login';
+      // Only redirect if not already on login page or public routes
+      const currentPath = window.location.pathname;
+      if (!currentPath.includes('/login') && !currentPath.includes('/feedback/')) {
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
