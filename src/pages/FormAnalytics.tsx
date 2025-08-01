@@ -353,9 +353,9 @@ const FormAnalytics: React.FC = () => {
 
       {/* Response Timeline */}
       <div className="bg-white shadow rounded-lg p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Response Timeline (Last 7 Days)</h3>
+        <h3 className="text-lg font-medium text-gray-900 mb-4">Responses Per Day (Last 7 Days)</h3>
         <div className="h-64">
-          <Line data={getResponseTimelineData()} options={chartOptions} />
+          <Bar data={getResponseTimelineData()} options={barChartOptions} />
         </div>
       </div>
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { publicFeedbackAPI } from '../services/api';
 import { FeedbackForm, SubmitFeedbackData } from '../types';
 
@@ -9,7 +9,7 @@ const PublicFeedbackForm: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
+  const navigate = useNavigate();
   const [answers, setAnswers] = useState<Record<number, any>>({});
 
   const loadForm = useCallback(async () => {
@@ -71,7 +71,7 @@ const PublicFeedbackForm: React.FC = () => {
       };
 
       await publicFeedbackAPI.submitFeedback(formId!, submitData);
-      setSuccess(true);
+      navigate('/feedback/submitted'); // Redirect to thank you page
     } catch (error: any) {
       console.error('Failed to submit feedback:', error);
       setError(error.response?.data?.message || 'Failed to submit feedback. Please try again.');
@@ -263,50 +263,13 @@ const PublicFeedbackForm: React.FC = () => {
     );
   }
 
-  if (success) {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="text-center max-w-md mx-auto p-8">
-        <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-6">
-          <svg className="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-          </svg>
-        </div>
-        <h2 className="text-3xl font-bold text-gray-900 mb-4">Thank You!</h2>
-        <p className="text-lg text-gray-600 mb-6">
-          Your feedback has been submitted successfully and will be reviewed by the administrator.
-        </p>
-        <div className="space-y-2">
-          <a 
-            href="/" 
-            className="inline-block bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition duration-200"
-          >
-            Return to Portal
-          </a>
-          <p className="text-sm text-gray-500">
-            Browse more feedback forms or submit additional responses
-          </p>
-          <p className="text-xs text-gray-400 mt-2">
-            Form ID: {formId}
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
   return (
   <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
     <div className="max-w-2xl mx-auto">
       {/* Header */}
       <div className="mb-6 text-center">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">User Feedback Portal</h1>
-        <a 
-          href="/" 
-          className="text-blue-600 hover:text-blue-500 text-sm"
-        >
-          ← Back to Portal Home
-        </a>
+        {/* Removed Back to Portal Home link as requested */}
       </div>
       
       <form onSubmit={handleSubmit} className="bg-white shadow rounded-lg p-6">

@@ -12,6 +12,8 @@ import ResponsesList from './pages/ResponsesList';
 import PublicFeedbackForm from './pages/PublicFeedbackForm';
 import UserAccess from './pages/UserAccess';
 import Login from './pages/Login';
+import FeedbackSubmitted from './pages/FeedbackSubmitted';
+import FeedbackResponse from './pages/FeedbackResponse';
 
 function App() {
   return (
@@ -24,6 +26,8 @@ function App() {
               <Route path="/" element={<UserAccess />} />
               <Route path="/login" element={<Login />} />
               <Route path="/feedback/:formId" element={<PublicFeedbackForm />} />
+              <Route path="/feedback/submitted" element={<FeedbackSubmitted />} />
+              <Route path="/feedback/response/:id" element={<FeedbackResponse />} />
               
               {/* Protected admin routes */}
               <Route path="/admin" element={

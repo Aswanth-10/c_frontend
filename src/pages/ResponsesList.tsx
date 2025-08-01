@@ -178,7 +178,7 @@ const ResponsesList: React.FC = () => {
                     </div>
                     <div className="flex items-center space-x-2">
                       <Link
-                        to={`/admin/responses/${response.id}`}
+                        to={`/feedback/response/${response.id}`}
                         className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-primary-700 bg-primary-100 hover:bg-primary-200"
                       >
                         <EyeIcon className="h-3 w-3 mr-1" />
