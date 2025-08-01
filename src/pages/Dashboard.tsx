@@ -272,7 +272,7 @@ const Dashboard: React.FC = () => {
                     </div>
                     <div>
                       <Link
-                        to={`/admin/forms/${response.form_id}/analytics`}
+                        to={`/feedback/response/${response.id}`}
                         className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-primary-700 bg-primary-100 hover:bg-primary-200"
                       >
                         <EyeIcon className="h-3 w-3 mr-1" />
@@ -287,6 +287,33 @@ const Dashboard: React.FC = () => {
           {summary.recent_responses_list.length === 0 && (
             <p className="text-center text-gray-500 py-4">No recent responses</p>
           )}
+        </div>
+      </div>
+
+      {/* Timeline of Recent Feedbacks */}
+      <div className="bg-white shadow rounded-lg mt-8">
+        <div className="px-4 py-5 sm:p-6">
+          <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
+            Recent Feedback Timeline
+          </h3>
+          <ul className="timeline-list">
+            {summary.recent_responses_list.map((feedback) => (
+              <li key={feedback.id} className="mb-4 flex items-start">
+                <span className="inline-block w-2 h-2 bg-primary-500 rounded-full mt-2 mr-4"></span>
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <span className="font-semibold text-gray-900">{feedback.form_title}</span>
+                    <span className="text-xs text-gray-500">{new Date(feedback.submitted_at).toLocaleString()}</span>
+                  </div>
+                  {/* Optionally, show a snippet of the first answer if available */}
+                  {/* <div className="text-gray-700 text-sm mt-1">{feedback.commentSnippet}</div> */}
+                </div>
+              </li>
+            ))}
+            {summary.recent_responses_list.length === 0 && (
+              <li className="text-gray-500">No recent feedbacks</li>
+            )}
+          </ul>
         </div>
       </div>
     </div>
