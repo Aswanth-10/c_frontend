@@ -37,12 +37,15 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       // Handle unauthorized access
       localStorage.removeItem('authToken');
-      window.location.href = '/login';
+      // Only redirect if not already on login page or public routes
+      const currentPath = window.location.pathname;
+      if (!currentPath.includes('/login') && !currentPath.includes('/feedback/')) {
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
 );
-
 // Auth API
 export const authAPI = {
   login: async (username: string, password: string) => {
@@ -55,15 +58,16 @@ export const authAPI = {
     return response.data;
   },
   
+  // Get current user info
   getCurrentUser: async () => {
     const response = await api.get('/api/auth/user/');
     return response.data;
   },
 };
 
-// Feedback Forms API
+// Forms API
 export const formsAPI = {
-  // Get all forms for the current user
+  // Get all forms
   getForms: async (): Promise<FeedbackForm[]> => {
     const response = await api.get('/api/forms/');
     return response.data.results || response.data;
@@ -83,13 +87,14 @@ export const formsAPI = {
   
   // Update a form
   updateForm: async (id: string, data: Partial<CreateFeedbackFormData>): Promise<FeedbackForm> => {
-    const response = await api.put(`/api/forms/${id}/`, data);
+    const response = await api.patch(`/api/forms/${id}/`, data);
     return response.data;
   },
   
   // Delete a form
-  deleteForm: async (id: string): Promise<void> => {
-    await api.delete(`/api/forms/${id}/`);
+  deleteForm: async (id: string): Promise<{ message: string }> => {
+    const response = await api.delete(`/api/forms/${id}/`);
+    return response.data;
   },
   
   // Get form analytics
@@ -101,13 +106,7 @@ export const formsAPI = {
   // Get question analytics
   getQuestionAnalytics: async (id: string): Promise<QuestionAnalytics[]> => {
     const response = await api.get(`/api/forms/${id}/question_analytics/`);
-    return response.data;
-  },
-  
-  // Get shareable link
-  getShareableLink: async (id: string): Promise<{ shareable_link: string; form_id: string }> => {
-    const response = await api.get(`/api/forms/${id}/share_link/`);
-    return response.data;
+    return response.data.results || response.data;
   },
 };
 
@@ -130,11 +129,17 @@ export const publicFeedbackAPI = {
     const response = await api.post(`/api/public/feedback/${formId}/`, data);
     return response.data;
   },
+  
+  // Get public response details
+  getPublicResponse: async (responseId: string): Promise<FeedbackResponse> => {
+    const response = await api.get(`/api/public/response/${responseId}/`);
+    return response.data;
+  },
 };
 
 // Responses API
 export const responsesAPI = {
-  // Get all responses for the current user's forms
+  // Get all responses
   getResponses: async (): Promise<FeedbackResponse[]> => {
     const response = await api.get('/api/responses/');
     return response.data.results || response.data;
@@ -155,6 +160,12 @@ export const notificationsAPI = {
     return response.data.results || response.data;
   },
   
+  // Get unread count
+  getUnreadCount: async (): Promise<{ unread_count: number }> => {
+    const response = await api.get('/api/notifications/unread_count/');
+    return response.data;
+  },
+  
   // Mark notification as read
   markAsRead: async (id: number): Promise<{ status: string }> => {
     const response = await api.post(`/api/notifications/${id}/mark_as_read/`);
@@ -166,19 +177,13 @@ export const notificationsAPI = {
     const response = await api.post('/api/notifications/mark_all_as_read/');
     return response.data;
   },
-  
-  // Get unread count
-  getUnreadCount: async (): Promise<{ unread_count: number }> => {
-    const response = await api.get('/api/notifications/unread_count/');
-    return response.data;
-  },
 };
 
 // Dashboard API
 export const dashboardAPI = {
-  // Get dashboard summary
+  // Get dashboard summary data
   getSummary: async (): Promise<FormSummary> => {
-    const response = await api.get('/api/dashboard/');
+    const response = await api.get('/api/dashboard/summary/');
     return response.data;
   },
 };

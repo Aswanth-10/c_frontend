@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotifications } from '../contexts/NotificationContext';
+import NotificationsPanel from './NotificationsPanel';
+import ProfileDropdown from './ProfileDropdown';
 import {
   HomeIcon,
   DocumentTextIcon,
@@ -9,7 +11,6 @@ import {
   ChatBubbleLeftRightIcon,
   BellIcon,
   UserIcon,
-  ArrowRightOnRectangleIcon,
   Bars3Icon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
@@ -20,6 +21,8 @@ const Layout: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   const navigation = [
     { name: 'Dashboard', href: '/admin/dashboard', icon: HomeIcon },
@@ -28,9 +31,14 @@ const Layout: React.FC = () => {
     { name: 'Responses', href: '/admin/responses', icon: ChatBubbleLeftRightIcon },
   ];
 
-  const handleLogout = async () => {
-    await logout();
-    navigate('/login');
+  const handleNotificationsClick = () => {
+    setNotificationsOpen(!notificationsOpen);
+    setProfileOpen(false); // Close profile dropdown if open
+  };
+
+  const handleProfileClick = () => {
+    setProfileOpen(!profileOpen);
+    setNotificationsOpen(false); // Close notifications if open
   };
 
   return (
@@ -115,7 +123,10 @@ const Layout: React.FC = () => {
             <div className="flex flex-1"></div>
             <div className="flex items-center gap-x-4 lg:gap-x-6">
               {/* Notifications */}
-              <button className="relative p-2 text-gray-400 hover:text-gray-500">
+              <button 
+                onClick={handleNotificationsClick}
+                className="relative p-2 text-gray-400 hover:text-gray-500 transition-colors"
+              >
                 <BellIcon className="h-6 w-6" />
                 {unreadCount > 0 && (
                   <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-xs text-white flex items-center justify-center">
@@ -126,21 +137,17 @@ const Layout: React.FC = () => {
 
               {/* Profile dropdown */}
               <div className="relative">
-                <div className="flex items-center gap-x-3">
+                <button
+                  onClick={handleProfileClick}
+                  className="flex items-center gap-x-3 p-2 rounded-md hover:bg-gray-100 transition-colors"
+                >
                   <div className="flex items-center gap-x-3">
                     <UserIcon className="h-6 w-6 text-gray-400" />
                     <span className="text-sm font-medium text-gray-900">
                       {user?.first_name} {user?.last_name}
                     </span>
                   </div>
-                  <button
-                    onClick={handleLogout}
-                    className="flex items-center gap-x-2 text-sm text-gray-500 hover:text-gray-700"
-                  >
-                    <ArrowRightOnRectangleIcon className="h-5 w-5" />
-                    Logout
-                  </button>
-                </div>
+                </button>
               </div>
             </div>
           </div>
@@ -153,6 +160,16 @@ const Layout: React.FC = () => {
           </div>
         </main>
       </div>
+
+      {/* Dropdown Components */}
+      <NotificationsPanel 
+        isOpen={notificationsOpen} 
+        onClose={() => setNotificationsOpen(false)} 
+      />
+      <ProfileDropdown 
+        isOpen={profileOpen} 
+        onClose={() => setProfileOpen(false)} 
+      />
     </div>
   );
 };

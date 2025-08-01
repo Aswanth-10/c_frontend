@@ -7,9 +7,12 @@ import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import FormsList from './pages/FormsList';
 import CreateForm from './pages/CreateForm';
+import EditForm from './pages/EditForm';
 import FormAnalytics from './pages/FormAnalytics';
 import ResponsesList from './pages/ResponsesList';
+import Settings from './pages/Settings';
 import PublicFeedbackForm from './pages/PublicFeedbackForm';
+import FeedbackResponse from './pages/FeedbackResponse';
 import Login from './pages/Login';
 
 function App() {
@@ -23,6 +26,7 @@ function App() {
               <Route path="/" element={<Navigate to="/login" replace />} />
               <Route path="/login" element={<Login />} />
               <Route path="/feedback/:formId" element={<PublicFeedbackForm />} />
+              <Route path="/feedback/response/:id" element={<FeedbackResponse />} />
               
               {/* Protected admin routes */}
               <Route path="/admin" element={
@@ -34,8 +38,10 @@ function App() {
                 <Route path="dashboard" element={<Dashboard />} />
                 <Route path="forms" element={<FormsList />} />
                 <Route path="forms/create" element={<CreateForm />} />
+                <Route path="forms/:id/edit" element={<EditForm />} />
                 <Route path="forms/:id/analytics" element={<FormAnalytics />} />
                 <Route path="responses" element={<ResponsesList />} />
+                <Route path="settings" element={<Settings />} />
               </Route>
               
               {/* Default redirect for unknown routes */}
