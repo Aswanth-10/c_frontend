@@ -43,12 +43,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       try {
         const token = localStorage.getItem('authToken');
         if (token) {
-          const userData = await authAPI.getCurrentUser();
-          setUser(userData);
+          try {
+            const userData = await authAPI.getCurrentUser();
+            setUser(userData);
+          } catch (error) {
+            // If token is invalid, remove it and continue as unauthenticated
+            console.error('Auth token invalid:', error);
+            localStorage.removeItem('authToken');
+            setUser(null);
+          }
+        } else {
+          // No token, user is not authenticated
+          setUser(null);
         }
       } catch (error) {
         console.error('Auth check failed:', error);
         localStorage.removeItem('authToken');
+        setUser(null);
       } finally {
         setLoading(false);
       }
