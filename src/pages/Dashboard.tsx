@@ -35,6 +35,7 @@ ChartJS.register(
 const Dashboard: React.FC = () => {
   const [summary, setSummary] = useState<FormSummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [timeFilter, setTimeFilter] = useState<'1hr' | '6hr' | '24hr'>('1hr');
 
   useEffect(() => {
@@ -44,10 +45,12 @@ const Dashboard: React.FC = () => {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
+      setError(null);
       const data = await dashboardAPI.getSummary();
       setSummary(data);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to load dashboard data:', error);
+      setError(error.response?.data?.error || 'Failed to load dashboard data. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -87,10 +90,36 @@ const Dashboard: React.FC = () => {
     );
   }
 
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center max-w-md">
+              <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-6">
+                <svg className="h-8 w-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Dashboard Error</h3>
+              <p className="text-gray-600 mb-4">{error}</p>
+              <button
+                onClick={loadDashboardData}
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700"
+              >
+                Try Again
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!summary) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-500">Failed to load dashboard data</p>
+        <p className="text-gray-500">No dashboard data available</p>
       </div>
     );
   }

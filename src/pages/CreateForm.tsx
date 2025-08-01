@@ -147,7 +147,8 @@ const CreateForm: React.FC = () => {
     try {
       setLoading(true);
       const createdForm = await formsAPI.createForm(formData);
-      navigate(`/admin/forms/${createdForm.id}/analytics`);
+      alert(`Form "${createdForm.title}" created successfully!`);
+      navigate('/admin/forms');
     } catch (error) {
       console.error('Failed to create form:', error);
       alert('Failed to create form. Please try again.');

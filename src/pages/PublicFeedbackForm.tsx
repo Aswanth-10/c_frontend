@@ -277,17 +277,11 @@ const PublicFeedbackForm: React.FC = () => {
           Your feedback has been submitted successfully and will be reviewed by the administrator.
         </p>
         <div className="space-y-2">
-          <a 
-            href="/" 
-            className="inline-block bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition duration-200"
-          >
-            Return to Portal
-          </a>
           <p className="text-sm text-gray-500">
-            Browse more feedback forms or submit additional responses
+            Your response has been recorded and saved.
           </p>
           <p className="text-xs text-gray-400 mt-2">
-            Form ID: {formId}
+            Submission ID: {formId}
           </p>
         </div>
       </div>
