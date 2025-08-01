@@ -38,27 +38,46 @@ const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [timeFilter, setTimeFilter] = useState<'1hr' | '6hr' | '24hr'>('1hr');
-  const { isAuthenticated, loading: authLoading } = useAuth();
+  const { isAuthenticated, loading: authLoading, user } = useAuth();
+  const [debugMode, setDebugMode] = useState(false);
 
   useEffect(() => {
     // Only load dashboard data if user is authenticated and auth is not loading
     if (!authLoading && isAuthenticated) {
+      console.log('User authenticated, loading dashboard data...');
       loadDashboardData();
     } else if (!authLoading && !isAuthenticated) {
+      console.log('User not authenticated, showing error...');
       // If not authenticated, set error state
       setError('You must be logged in to view the dashboard.');
       setLoading(false);
+    } else {
+      console.log('Auth loading:', authLoading, 'Is authenticated:', isAuthenticated);
     }
   }, [authLoading, isAuthenticated]);
 
-  const loadDashboardData = async () => {
+  const loadDashboardData = async (retryCount = 0) => {
     try {
       setLoading(true);
       setError(null);
+      
+      // Small delay to ensure auth token is properly set
+      if (retryCount === 0) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      
       const data = await dashboardAPI.getSummary();
       setSummary(data);
     } catch (error: any) {
       console.error('Failed to load dashboard data:', error);
+      
+      // If it's an auth error and we haven't retried, try once more
+      if (error.response?.status === 401 && retryCount === 0) {
+        console.log('Auth error, retrying in 500ms...');
+        setTimeout(() => loadDashboardData(1), 500);
+        return;
+      }
+      
       setError(error.response?.data?.error || 'Failed to load dashboard data. Please try again.');
     } finally {
       setLoading(false);
@@ -126,12 +145,30 @@ const Dashboard: React.FC = () => {
                     Go to Login
                   </button>
                 ) : (
-                  <button
-                    onClick={loadDashboardData}
-                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700"
-                  >
-                    Try Again
-                  </button>
+                  <>
+                    <button
+                      onClick={() => loadDashboardData()}
+                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700"
+                    >
+                      Try Again
+                    </button>
+                    <button
+                      onClick={() => setDebugMode(!debugMode)}
+                      className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                    >
+                      Debug Info
+                    </button>
+                  </>
+                )}
+                {debugMode && (
+                  <div className="mt-4 p-4 bg-gray-100 rounded text-left text-xs">
+                    <h4 className="font-semibold mb-2">Debug Information:</h4>
+                    <p>Auth Loading: {authLoading ? 'Yes' : 'No'}</p>
+                    <p>Is Authenticated: {isAuthenticated ? 'Yes' : 'No'}</p>
+                    <p>User: {user ? JSON.stringify(user, null, 2) : 'None'}</p>
+                    <p>Token: {localStorage.getItem('authToken') ? 'Present' : 'Missing'}</p>
+                    <p>Error: {error}</p>
+                  </div>
                 )}
               </div>
             </div>
@@ -145,6 +182,12 @@ const Dashboard: React.FC = () => {
     return (
       <div className="text-center py-12">
         <p className="text-gray-500">No dashboard data available</p>
+        <button
+          onClick={() => loadDashboardData()}
+          className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700"
+        >
+          Try Loading Data
+        </button>
       </div>
     );
   }
