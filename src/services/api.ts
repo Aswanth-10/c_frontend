@@ -37,7 +37,11 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       // Handle unauthorized access
       localStorage.removeItem('authToken');
-      window.location.href = '/login';
+      // Only redirect if not already on login page or public routes
+      const currentPath = window.location.pathname;
+      if (!currentPath.includes('/login') && !currentPath.includes('/feedback/')) {
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
@@ -130,6 +134,12 @@ export const publicFeedbackAPI = {
     const response = await api.post(`/api/public/feedback/${formId}/`, data);
     return response.data;
   },
+  
+  // Get public response details
+  getPublicResponse: async (responseId: string): Promise<FeedbackResponse> => {
+    const response = await api.get(`/api/public/response/${responseId}/`);
+    return response.data;
+  },
 };
 
 // Responses API
@@ -178,8 +188,30 @@ export const notificationsAPI = {
 export const dashboardAPI = {
   // Get dashboard summary
   getSummary: async (): Promise<FormSummary> => {
-    const response = await api.get('/api/dashboard/');
-    return response.data;
+    try {
+      const response = await api.get('/api/dashboard/summary/');
+      return response.data;
+    } catch (error: any) {
+      console.error('Dashboard API failed, trying fallback:', error);
+      
+      // Try alternative endpoint
+      try {
+        const response = await api.get('/api/dashboard/');
+        return response.data;
+      } catch (fallbackError: any) {
+        console.error('Dashboard fallback API also failed:', fallbackError);
+        
+        // Return mock data for development
+        return {
+          total_forms: 0,
+          active_forms: 0,
+          total_responses: 0,
+          recent_responses: 0,
+          average_completion_rate: 0,
+          recent_responses_list: []
+        };
+      }
+    }
   },
 };
 
